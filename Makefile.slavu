@@ -1,0 +1,35 @@
+
+ifdef CLIPROOT
+include $(CLIPROOT)/include/Makefile.inc
+endif
+CLIP	= $(CLIPROOT)/bin/clip
+CLIPFLAGS = -a -O -l 
+CLIPLIBS  =
+OBJS  = main_slavu.o slavu.o
+
+#rddsys.o\
+
+.SUFFIXES: .prg .o
+
+all:    $(OBJS) 
+#	$(CLIP) -e -s $(OBJS) $(CLIPLIBS)
+	$(CLIP) -e --static $(OBJS)
+	cp main_slavu app_slavu
+	rm main_slavu
+
+clean:
+	rm -rf *.o *.c *.a *.so *.b *.BAK *.bak *~ core* *core *.ex *.nm
+
+copy:
+	./cp_aninf
+	
+install:
+	rm /usr/bin/app_arch
+	cp ./app_arch /usr/bin/app_arch
+
+.prg.o:
+	$(CLIP) $(CLIPFLAGS) $<
+
+.prg.po:
+	$(CLIP) $(CLIPFLAGS) -p $<
+
