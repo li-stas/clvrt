@@ -3,7 +3,7 @@
 #define DEB_CNT_DAY 90
 #define DEB_KOP_TARA (str(_FIELD->kop,3) $ '170;105')
 #define DEB_KOP_KASSA (str(_FIELD->kop,3) $ '169;161') // эти в Д-ту не вкл
-#define DEB_KPL 2531604
+#define DEB_KPL 3059516
 
 /*****************************************************************
  
@@ -326,6 +326,8 @@ static function RsDoc(dtBeg,dtEnd,nA361)
           ktasr=ktas
           DtOplr=DtOpl
           nktar=getfield('t1', 'ktar', 's_tag', 'fio')
+          DocGuIdr=DocGuId
+
 
           ttnr=ttn
           nkklr=nkkl
@@ -348,8 +350,8 @@ static function RsDoc(dtBeg,dtEnd,nA361)
 
           //sele SkDoc
           netadd()
-          netrepl('ttn,kpl,kgp,DOp,Sdv,prz,kta,ktas,sk,kop,nkkl,nkta,DtOpl,NPl',                           ;
-                    { ttnr, kplr, kgpr, DOpr, Sdvr, przr, ktar, ktasr, skr, kopr, nkklr, nktar, DtOplr, allt(str(Sdvr,9,2)) } ;
+          netrepl('ttn,kpl,kgp,DOp,Sdv,prz,kta,ktas,sk,kop,nkkl,nkta,DtOpl,NPl,NGp',;
+                  {ttnr, kplr, kgpr, DOpr, Sdvr, przr, ktar, ktasr, skr, kopr, nkklr, nktar, DtOplr, allt(str(Sdvr,9,2)), DocGuIdr};
                 )
 
           sele rs1
@@ -358,8 +360,10 @@ static function RsDoc(dtBeg,dtEnd,nA361)
 
         sele pr1
         copy to ('tmpPV') ;//+padl(ltrim(str(m,2)),2,'0')) ;
-          for kop=108 .and. prz=1 .and. skvz#0 .and. TtnVz#0 ;
-            .and. SdvM # 0 // возрат товар
+          ;// возрат товар по указаной ТТН
+          for (kop=108 .and. prz=1 .and. skvz#0 .and. TtnVz#0 .and. SdvM # 0);
+          ;// приход-расход по DocGuid (переоценка) ее закрыть в первую очередь
+          .or. (kop=107 .and. prz=1 .and. !empty(DocGuid) .and. SdvM # 0)
         sele prVz
         append from ('tmpPV') //+padl(ltrim(str(m,2)),2,'0'))
 
@@ -375,12 +379,20 @@ static function RsDoc(dtBeg,dtEnd,nA361)
   next
 
 
-
   sele SkDoc
   copy to (str(DEB_KPL)+'d') for kpl=DEB_KPL .and. !DEB_KOP_TARA
 
+
+  // закрытие переоценок
+  sele SkDoc
+  index on left(NGp, 36) to tmp_ngp
+  CloseOverValue()
+  sele SkDoc
+  set index to
+
   sele prVz
   index on str(SkVz)+str(TtnVz) tag t1
+
   sele SkDoc
   DBGoTop()
   Do While !eof()
@@ -2060,8 +2072,47 @@ static function PrDoc(dtBeg,dtEnd,nA361)
     appe blank
     repl nn with i, DOp with dtr-i
   next
-
   return (.t.)
+
+
+/*****************************************************************
+ 
+ FUNCTION:
+ АВТОР..ДАТА..........С. Литовка  12-16-20 * 11:43:56am
+ НАЗНАЧЕНИЕ.........  // закрытие переоценок
+ ПАРАМЕТРЫ..........
+ ВОЗВР. ЗНАЧЕНИЕ....
+ ПРИМЕЧАНИЯ.........
+ */
+STATIC FUNCTION CloseOverValue()
+  LOCAL nSumOpl
+
+  sele prVz
+  DBGoTop()
+  Do While !eof()
+    If !Empty(prVz->DocGuId) .and.  SkDoc->(DBSeek(prVz->DocGuId))
+
+      nSumOpl := prVz->SdvM //сумма товара
+      Do Case
+      Case round(Sdv - nSumOpl,2) = 0
+        SkDoc->Sdv := 0
+        prVz->SdvM := 0
+      Case round(Sdv - nSumOpl,2) > 0
+        SkDoc->Sdv := Sdv - nSumOpl // уменьшили долг
+        prVz->SdvM := 0
+      Case round(Sdv - nSumOpl,2) < 0
+        SkDoc->Sdv := 0
+        prVz->SdvM := nSumOpl - Sdv // что то осталось пусть идет дальше
+        // по Возр. Накл. если есть
+      EndCase
+
+    EndIf
+
+    sele prVz
+    DBSkip()
+  EndDo
+
+  RETURN ( NIL )
 
 
 /*

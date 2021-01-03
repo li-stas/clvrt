@@ -1582,6 +1582,8 @@ CASE UPPER("/accord") $ cDosParam
 
 
 CASE UPPER("/pepsi") $ cDosParam
+  mkkplkgp(102,nil)
+  quit
   /*
   mkkplkgp(19,nil)
   mkkplkgp(58,1)
@@ -2267,6 +2269,12 @@ CASE UPPER("/cmiv") $ cDosParam
     */
 
 CASE UPPER("/mem") $ cDosParam
+
+  oSum := JsonDecode('sadf ыаыф фывафы "Коригування":-30.00')
+  outlog(__FILE__,__LINE__,oSum)
+  outlog(__FILE__,__LINE__,oSum['Коригування'], oSum['Коригування'] * (-1))
+
+  quit
 
   dtBegr:=STOD('20180701')
   dtEndr:=EOM(dtBegr) //STOD('20180228')
@@ -4391,8 +4399,7 @@ FUNCTION Delta2Csv(cMark, cKod_DDIA, cFilePef, cListEmail, cNmMark, ddtBeg)
   //SET CENTURY ON
     cRunZip:="/usr/bin/zip"
     cFileNameArc := cFile + ".zip"  //cFilePef+"DDIA"+cMark+DTOC(DATE(),"yyyy-mm-dd")+'T'+CHARREPL(":", TIME(), "-")+".zip"
-    cFileList := cFile + ".csv"+;
-    +' '+"sku.csv"
+    cFileList := cFile + ".csv" //+;    +' '+"sku.csv"
 
 
     cLogSysCmd:=""

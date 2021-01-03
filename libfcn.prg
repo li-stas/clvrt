@@ -4327,3 +4327,54 @@ function Rand(nStart)
     /*
     #define SET_OF_OEM  [€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ ¡¢£¤¥¦§¨©ª«¬­®¯àáâãäåæçèéêëìíîïðñòóôõö÷øù]
     */
+
+/*****************************************************************
+ 
+ FUNCTION: GetDataField(nSk,cDataBase,cSeek,cRetField)
+ €‚’Ž..„€’€..........‘. ‹¨â®¢ª   06-05-08 * 01:19:13pm
+ €‡€—…ˆ….........
+ €€Œ…’›..........
+ ‚Ž‡‚. ‡€—…ˆ…....
+ ˆŒ…—€ˆŸ.........
+ */
+FUNCTION GetDataField(nSk,cDataBase,cAlias,cTag,cSeek,cRetField)
+  LOCAL xVal
+  LOCAL nSele
+  //outlog(__FILE__,__LINE__,nSk,cDataBase,cTag,cSeek,cRetField,ISCHAR(cRetField),ISBLOCK(cRetField))
+  nSele:=SELECT()
+
+  sele cskl
+  __dblocate({||sk=nSk})
+  pathr:=gcPath_d+ALLTRIM(path)
+  netuse(cDataBase,cAlias,,1)
+  //xVal:=getfield(cTag,cSeek,cDataBase,cRetField)
+
+  netseek(cTag,cSeek)
+  DO CASE
+  CASE ISCHAR(cRetField)
+    xVal:=(&cRetField)
+
+  CASE ISBLOCK(cRetField)
+    xVal:=EVAL(cRetField)
+
+    //outlog(__FILE__,__LINE__,alias(),select(),ttn,tmpmdoc->rn)
+    /*
+    dopr:=BLANK(date())
+    Do While ttn=tmpmdoc->rn
+      outlog(rso1->dop)
+      if !empty(rso1->dop)
+        dopr:=rso1->dop
+      else
+        //nil
+      endif
+      DBSkip()
+    EndDo
+    xVal:=dopr
+    */
+
+  ENDCASE
+
+  nuse(cAlias)
+
+  SELECT (nSele)
+  RETURN (xVal)

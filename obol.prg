@@ -4987,101 +4987,10 @@ FUNCTION lod2swe2xml(cPth_Plt_lpos)
  ПРИМЕЧАНИЯ.........
  */
 FUNCTION PosObolonRead(cPath, cFile)
-  PosXmlRead(cPath, cFile)
+  //PosXmlRead(cPath, cFile)
   PosSalesWebRead(cPath, cFile)
   RETURN ( NIL )
 
-STATIC FUNCTION PosXmlRead(cPath, cFile)
-  LOCAL nError, cRezult
-  LOCAL Ret:=TRUE
-  LOCAL i:=0, bRezult:={|cRezult|;
-        cRezult:= FTOKENNEXT(), cRezult:=StrTran(cRezult,CHR(13)+CHR(10),''),;
-        allt(left(cRezult,AT('</',cRezult)-1));
-      }
-  LOCAL cCmd, cLogSysCmd
-
-  // запуск приема ФТП
-  cCmd:='CUR_PWD=`pwd`; cd /m1/upgrade2/lodis/arnd; ';
-  +'./get-ftp-POS.sh;  cd $CUR_PWD'
-  cLogSysCmd:=''
-  SYSCMD(cCmd,"",@cLogSysCmd)
-  outlog(__FILE__,__LINE__,cCmd)
-
-
-  use (cPath+'\'+'pos_swe') new Exclusive
-  zap
-
-
-  nError := FTOKENINIT(cPath+'\pos\output\'+cFile, '>', 1)
-  IF (!(nError < 0))
-    WHILE (!FTOKENEND())
-      cRezult:= FTOKENNEXT();  cRezult:=StrTran(cRezult,CHR(13)+CHR(10),'')
-      Do Case
-      Case '<'+'obj' $ cRezult .and. len(allt(cRezult)) < 5
-        // новая строка данных
-        //outlog(__FILE__,__LINE__,'// новая строка данных)
-        DBAppend()
-        loop
-
-      case '<'+'Invent_No' $ cRezult
-        cRezult:=EVAL(bRezult)
-        repl INV   with val(cRezult)
-
-      case '<'+'Serial_No' $ cRezult
-        cRezult:=EVAL(bRezult)
-        repl SERIAL with cRezult
-
-      case '<'+'POS_Name' $ cRezult
-        cRezult:=EVAL(bRezult)
-        repl POS_NAME with translate_charset("cp1251",host_charset(),cRezult)
-
-      case '<'+'POSType_ID' $ cRezult
-        cRezult:=EVAL(bRezult)
-        repl POSTPID  with val(cRezult)
-
-      case '<'+'Name' $ cRezult
-        cRezult:=EVAL(bRezult)
-        repl NAME     with  translate_charset("cp1251",host_charset(),cRezult)
-
-      case '<'+'YearProduction' $ cRezult
-        cRezult:=EVAL(bRezult)
-        repl YEARP    with  cRezult
-
-      case '<'+'Cust_id' $ cRezult
-        cRezult:=EVAL(bRezult)
-        repl CUST_ID  with val(cRezult)
-
-      case '<'+'ManufacturerId' $ cRezult
-        cRezult:=EVAL(bRezult)
-        repl POSMANUF with val(cRezult)
-
-      case '<'+'TechnicalCondition' $ cRezult
-        cRezult:=EVAL(bRezult)
-        repl TECHCOND with val(cRezult)
-
-      case '<'+'POS_ID' $ cRezult
-        cRezult:=EVAL(bRezult)
-        repl POS_ID   with val(cRezult)
-      Case '/<obj' $ cRezult
-        // конец строки данных
-      EndCase
-
-      // outlog(__FILE__,__LINE__,cRezult)
-
-      If (++i) > 40
-        //exit
-      EndIf
-
-    ENDDO
-  ELSE
-    Ret:=FALSE
-  ENDIF
-
-  FTOKENCLOS()
-
-  close pos_swe
-
-  RETURN Ret
 
 
 /*****************************************************************
@@ -6266,6 +6175,10 @@ STATIC FUNCTION PosSalesWebRead(cPath, cFile)
   SYSCMD(cSysCmd,"",@cLogSysCmd)
   outlog(3,__FILE__,__LINE__,cSysCmd)
   outlog(3,__FILE__,__LINE__,cLogSysCmd)
+  If filesize("_posout.txt") < 1000
+    outlog(__FILE__,__LINE__,"_posout.txt filesize=", filesize("_posout.txt"),cSysCmd)
+    RETURN (NIL)
+  EndIf
   //  { 'Name', 'NAME', {|cData| translate_charset("cp1251",host_charset(),cData)}},;
   //  { 'POS_Name', 'POS_NAME', {|cData| translate_charset("cp1251",host_charset(),cData)}},;
 
@@ -6313,7 +6226,7 @@ STATIC FUNCTION PosSalesWebRead(cPath, cFile)
   EndIf
 
 
-  RETURN ( NIL )
+  RETURN (NIL)
 
 
 /*****************************************************************
@@ -6373,13 +6286,14 @@ FUNCTION lod2swe2sql(cPth_Plt_lpos)
   LOCAL cDataSql, aSqlCmd, i, t1
   If .t.
 
+    outlog(__FILE__,__LINE__,"filesize=", filesize(cPth_Plt_lpos+'\pos.sql'),cSysCmd)
     copy file (cPth_Plt_lpos+'\pos.sql') to ('pos.sql')
     cLogSysCmd:=cSysCmd:=""
 
     cSysCmd+='./SWE_sendPos.bat'
 
     t1:=SECONDS()
-    outlog(__FILE__,__LINE__,filesize('pos.sql'),cSysCmd)
+    outlog(__FILE__,__LINE__,"  cp filesize=", filesize('pos.sql'),cSysCmd)
     SYSCMD(cSysCmd,"",@cLogSysCmd)
     outlog(__FILE__,__LINE__,t1-SECONDS(),cLogSysCmd)
 
@@ -6429,3 +6343,97 @@ static Function LocalPosStatus()
     close LPOSARCH
   EndIf
   Return ( Nil )
+
+/*
+STATIC FUNCTION PosXmlRead(cPath, cFile)
+  LOCAL nError, cRezult
+  LOCAL Ret:=TRUE
+  LOCAL i:=0, bRezult:={|cRezult|;
+        cRezult:= FTOKENNEXT(), cRezult:=StrTran(cRezult,CHR(13)+CHR(10),''),;
+        allt(left(cRezult,AT('</',cRezult)-1));
+      }
+  LOCAL cCmd, cLogSysCmd
+
+  // запуск приема ФТП
+  cCmd:='CUR_PWD=`pwd`; cd /m1/upgrade2/lodis/arnd; ';
+  +'./get-ftp-POS.sh;  cd $CUR_PWD'
+  cLogSysCmd:=''
+  SYSCMD(cCmd,"",@cLogSysCmd)
+  outlog(__FILE__,__LINE__,cCmd)
+
+
+  use (cPath+'\'+'pos_swe') new Exclusive
+  zap
+
+
+  nError := FTOKENINIT(cPath+'\pos\output\'+cFile, '>', 1)
+  IF (!(nError < 0))
+    WHILE (!FTOKENEND())
+      cRezult:= FTOKENNEXT();  cRezult:=StrTran(cRezult,CHR(13)+CHR(10),'')
+      Do Case
+      Case '<'+'obj' $ cRezult .and. len(allt(cRezult)) < 5
+        // новая строка данных
+        //outlog(__FILE__,__LINE__,'// новая строка данных)
+        DBAppend()
+        loop
+
+      case '<'+'Invent_No' $ cRezult
+        cRezult:=EVAL(bRezult)
+        repl INV   with val(cRezult)
+
+      case '<'+'Serial_No' $ cRezult
+        cRezult:=EVAL(bRezult)
+        repl SERIAL with cRezult
+
+      case '<'+'POS_Name' $ cRezult
+        cRezult:=EVAL(bRezult)
+        repl POS_NAME with translate_charset("cp1251",host_charset(),cRezult)
+
+      case '<'+'POSType_ID' $ cRezult
+        cRezult:=EVAL(bRezult)
+        repl POSTPID  with val(cRezult)
+
+      case '<'+'Name' $ cRezult
+        cRezult:=EVAL(bRezult)
+        repl NAME     with  translate_charset("cp1251",host_charset(),cRezult)
+
+      case '<'+'YearProduction' $ cRezult
+        cRezult:=EVAL(bRezult)
+        repl YEARP    with  cRezult
+
+      case '<'+'Cust_id' $ cRezult
+        cRezult:=EVAL(bRezult)
+        repl CUST_ID  with val(cRezult)
+
+      case '<'+'ManufacturerId' $ cRezult
+        cRezult:=EVAL(bRezult)
+        repl POSMANUF with val(cRezult)
+
+      case '<'+'TechnicalCondition' $ cRezult
+        cRezult:=EVAL(bRezult)
+        repl TECHCOND with val(cRezult)
+
+      case '<'+'POS_ID' $ cRezult
+        cRezult:=EVAL(bRezult)
+        repl POS_ID   with val(cRezult)
+      Case '/<obj' $ cRezult
+        // конец строки данных
+      EndCase
+
+      // outlog(__FILE__,__LINE__,cRezult)
+
+      If (++i) > 40
+        //exit
+      EndIf
+
+    ENDDO
+  ELSE
+    Ret:=FALSE
+  ENDIF
+
+  FTOKENCLOS()
+
+  close pos_swe
+
+  RETURN Ret
+*/

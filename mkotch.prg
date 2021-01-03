@@ -397,6 +397,9 @@ function mkkplkgp(p1, p2)
     skr=getfield('t1', 'ktar', 's_tag', 'AgSk')
 
     ktasr=getfield('t1', 'ktar', 's_tag', 'ktas')
+
+    // iif(ktar=825,outlog(__FILE__,__LINE__,ktar,ktasr,skr,mkeep),)
+
     if (ktar=ktasr)
       sele s_tag
       go top
@@ -414,7 +417,9 @@ function mkkplkgp(p1, p2)
           loop
         endif
 
-        sele stagtm
+        stagtm_ktar()
+
+        /*sele stagtm
         if (netseek('t1', 'ktar'))
           while (kta=ktar)
             tmestor=tmesto
@@ -438,14 +443,16 @@ function mkkplkgp(p1, p2)
             skip
           enddo
 
-        endif
+        endif*/
 
         sele s_tag
         skip
       enddo
 
     else
-      sele stagtm
+      stagtm_ktar()
+
+      /*sele stagtm
       if (netseek('t1', 'ktar'))
         while (kta=ktar)
           tmestor=tmesto
@@ -469,7 +476,7 @@ function mkkplkgp(p1, p2)
           skip
         enddo
 
-      endif
+      endif*/
 
     endif
 
@@ -598,3 +605,39 @@ Function nikolaPrice()
   close wrs
   Return ( Nil )
 
+/*****************************************************************
+ 
+ FUNCTION:
+ €‚’..„€’€..........‘. ‹¨â®¢ª   12-24-20 * 05:03:55pm
+ €‡€—…ˆ….........
+ €€Œ…’›..........
+ ‚‡‚. ‡€—…ˆ…....
+ ˆŒ…—€ˆŸ.........
+ */
+STATIC Function stagtm_ktar()
+  sele stagtm
+  if (netseek('t1', 'ktar'))
+    while (kta=ktar)
+      tmestor=tmesto
+      sele etm
+      if (netseek('t1', 'tmestor'))
+        kgpr=kgp
+        kplr=kpl
+      else
+        sele stagtm
+        skip
+        loop
+      endif
+
+      sele mkkplkgp
+      if (!netseek('t1', 'kgpr,kplr'))
+        netadd()
+        netrepl('kgp,kpl,kta,sk', {kgpr,kplr,ktar,skr})
+      endif
+
+      sele stagtm
+      skip
+    enddo
+
+  endif
+  Return ( Nil )
