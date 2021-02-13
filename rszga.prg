@@ -1025,7 +1025,7 @@ Static Function Rs2tvi(kolr,nl_ktl)
      ktlp_r=ktl
      MnTov_r=MnTov
      MnTovP_r=MnTov
-     prboxr=at('ящ',nat)
+     prBoxr=at('ящ',nat)
      rcPr2o1r=0
      amnp_r=0
 
@@ -1177,7 +1177,7 @@ Static Function Rs2tvi(kolr,nl_ktl)
                     opttr=opt
                     k1t_r=k1t // код тары привязки
                     if gnEnt=21
-                       if prboxr#0.and.k1t_r=0
+                       if prBoxr#0.and.k1t_r=0
                           #ifdef __CLIP__
                              outlog(__FILE__,__LINE__,Ttnr,ktlr,k1tr,k1t_r,"Нет ящ в стекле в TOV")
                           #endif
@@ -1880,6 +1880,7 @@ static Function Vo9(lAccDeb,cLsKop139)
                       skip; loop
                   endif
                 endif
+
                 BlkMk_r=getfield('t1','mkeep_r','mkeep','BlkMk')
                 rc_tovr=recn()
                 if fieldpos('BlkKpk')#0.and.BlkKpk#0

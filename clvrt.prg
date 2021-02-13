@@ -663,16 +663,16 @@ CASE UPPER("/crdoc") $ cDosParam
   crdoc() //корр док
 CASE UPPER("/rc") $ cDosParam
      buhskr=0  // все
-     rmmn(2,1) // принят и одни днень
+     RmMn(2,1) // принят и одни днень
      IF UPPER("/cron") $ cDosParam
         gdTd=gomonth(gdTd,-1) // сменить месяц
         buhskr=0
-        rmmn(2,1)
+        RmMn(2,1)
      ENDIF
 CASE UPPER("/sd") $ cDosParam
-  rmmn(1,kolmodr,buhskr) // передать и /kolmod /buhskr
+  RmMn(1,kolmodr,buhskr) // передать и /kolmod /buhskr
 CASE UPPER("/s0d") $ cDosParam
-  rmmn(1) // передать все
+  RmMn(1) // передать все
 
 CASE UPPER("/debTPok") $ cDosParam
    TPokKegK() // тара из тарного склада
@@ -1719,6 +1719,9 @@ CASE UPPER("/bank") $ cDosParam
   quit
 
 CASE UPPER("/jsonmap") $ cDosParam
+  EdinOrders(cDosParam,".")
+  quit
+
   //  mkkplkgp(27,nil)
   //ActSW_tt()
   //quit
@@ -4292,7 +4295,7 @@ FUNCTION Delta2Csv(cMark, cKod_DDIA, cFilePef, cListEmail, cNmMark, ddtBeg)
      cLine:=;
      cKod_DDIA;//ДистрибюторИД               Число       ОКПО/ИНН дистрибьютора
      +_T+"ТОВ Сумипродресус"; // //НаименованиеДистрибьютора   Строка(150) Короткое наименование дистрибьютора
-     +_T+cDTLM; //ДатаДокумента               Строка(19)  Формат dd-MM-yyyy Пример 12-01-2020
+     +_T+cDTLM; //ДатаДокумента               Строка(19)  Формат dd-MM-yyyy Пример 12-01-20 20
      +_T+cBar;//НоменклатураИД              Число       Артикул номенклатуры (см. Штрих-коды). Если не определен, то системный код товара.
      +_T+LTRIM(STR(SK));//СкладДистрибьютора          Число       Код склада, на котором хранится остаток товара.
      +_T+strtran(ALLTRIM(STR(OsFo)),".",",");//ОстатокКоличество           Число       Ненулевой остаток товара на текущую дату, также не должен быть отрицательным

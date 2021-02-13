@@ -6,6 +6,7 @@
 FUNCTION EdinOrders(cDosParam, cPath_Order)
   LOCAL lerase:=.T.
   LOCAL aFiles, aFile, aFiles01
+  LOCAL cBar, j
   LOCAL aMessErr, cMessErr
   DEFAULT cPath_Order TO gcPath_ew+"edin\order\inbox"
 
@@ -24,7 +25,9 @@ FUNCTION EdinOrders(cDosParam, cPath_Order)
   netuse('kgp')
   netuse('kln')
   netuse('etm')
+  netuse('s_tag')
   netuse('stagtm')
+  netuse('stagm')
   netuse('ctov')
 
 
@@ -90,7 +93,7 @@ FUNCTION EdinOrders(cDosParam, cPath_Order)
     kopr:=160
     kopir:=kopr
     // ТА точка?
-    ktar=agtm(nil, kplr, kgpr)
+    ktar := AgTm(nil, kplr, kgpr)
     outlog(3,__FILE__,__LINE__,'  ktar',ktar)
 
     DtRor := CTOD(oOrder["DELIVERYDATE"],'YYYY-MM-DD') //дата доставки
@@ -137,13 +140,36 @@ FUNCTION EdinOrders(cDosParam, cPath_Order)
     netrepl('RndSdv',{2}) // округление
     netrepl('spd',{1}) //признак обработки
 
+    // товарная часть
+    mkeepr := 0
     for oPosAtttr in oOrder:products
       //outlog(__FILE__,__LINE__,"oPosAtttr", oPosAtttr )
-      Barr:=val(oPosAtttr["PRODUCT"])
-      MnTovr:=getfield('t4','Barr','ctov','MnTovT')
-      If Empty(MnTovr)
-        MnTovr:=getfield('t4','Barr','ctov','MnTov')
+      /*
+      If !("WPRODUCTIDBUYER" $ oPosAtttr)
+          outlog(3,__FILE__,__LINE__,' !("WPRODUCTIDBUYER" $ oPosAtttr)')
       EndIf
+      */
+
+      MnTovr:=0
+
+      If "PRODUCTIDBUYER" $ oPosAtttr
+        MnTovr := val(oPosAtttr["PRODUCTIDBUYER"])
+        MnTovr := getfield('t1','MnTovr','ctov','MnTovT')
+      EndIf
+      If Empty(MnTovr)
+        cBar := oPosAtttr["PRODUCT"]
+        Barr := val(cBar)
+        If len(cBar) > 7 //ШК
+          MnTovr := getfield('t4','Barr','ctov','MnTovT')
+          If Empty(MnTovr)
+            MnTovr :=getfield('t4','Barr','ctov','MnTov')
+          EndIf
+        Else
+          MnTovr := Barr
+        EndIf
+
+      EndIf
+
 
       kvpr:=val(oPosAtttr["ORDEREDQUANTITY"])
                           // <ORDEREDQUANTITY>
@@ -154,16 +180,11 @@ FUNCTION EdinOrders(cDosParam, cPath_Order)
       netrepl('ttn,mntov,kvp,zen',{ttnr,mntovr,kvpr,zenr},)
 
       If Empty(MnTovr)
-        If len(aMessErr) = 1
-           AADD(aMessErr,;
-           "Заявка от " + oOrder["DATE"] + " #" + allt(oOrder['NUMBER']) + CRLF)
-           AADD(aMessErr,;
-           "Грузополучатель: "+ allt(getfield('t1','kgpr','kln','nkl')) + CRLF)
-           AADD(aMessErr,;
-           "Плательщик     : "+ allt(getfield('t1','kplr','kln','nkl')) + CRLF + CRLF)
-           AADD(aMessErr,;
-           "Продукция не обработана: нет штрихкода(ШК) в справочнике"+CRLF)
-        EndIf
+
+        len_aMessErr_eq_1(oOrder, @aMessErr)
+
+        AADD(aMessErr,;
+        "Продукция не обработана: нет штрихкода(ШК) в справочнике"+CRLF)
         AADD(aMessErr,;
         CRLF;
         +"ПозN:"+PADL(oPosAtttr["POSITIONNUMBER"],3);
@@ -174,11 +195,61 @@ FUNCTION EdinOrders(cDosParam, cPath_Order)
         netrepl('MnTovr,svp',{-1, val(oPosAtttr["PRODUCT"])},)
         netdel()
         outlog(3,__FILE__,__LINE__,'  DELE 4 Barr',Barr)
+      else
+        If Empty(mkeepr)
+          mkeepr:=getfield('t1','MnTovr','ctov','mkeep')
+        EndIf
 
       EndIf
 
 
     next
+
+    If !Empty(mkeepr) // прочитан хоть одни товар
+
+      //kta_mkeepr:=AgTmMKeep(kplr, kgpr, mkeepr)
+      //AgTmMKeep(kplr, kgpr, mkeepr)
+
+      aListKta := {0}
+      nTMesto := 0
+      ktar=agtm(nil, kplr, kgpr, @aListKta, @nTMesto)
+      kta_mkeepr:=0
+
+      outlog(3,__FILE__,__LINE__, "mkeepr nTMesto", mkeepr, nTMesto)
+      outlog(3,__FILE__,__LINE__, "aListKta", aListKta)
+      If len(aListKta) = 1 // нет ТА
+        // ничего не делаем тк уже прописан (раньше нашли)
+      else
+        for j:=2 to len(aListKta)
+          ktar := aListKta[j]
+          uvolr := getfield('t1','ktar','s_tag','uvol')
+          If uvolr = 0 // живой
+
+            If !Empty(getfield('t1','ktar,mkeepr','sTagM','kta'))
+              //нашли ТА и МакрДерж
+              kta_mkeepr := ktar
+              exit
+            Else
+              //поиск по СуперВайзеру KtaSr
+              ktaSr := getfield('t1','ktar','s_tag','KtaS')
+              If !Empty(getfield('t1','ktaSr,mkeepr','sTagM','Kta'))
+                kta_mkeepr := ktar
+                exit
+              EndIf
+            EndIf
+
+          EndIf
+        next j
+        outlog(3,__FILE__,__LINE__,'  kta_mkeepr',kta_mkeepr, len(aMessErr))
+        If Empty(kta_mkeepr) // не нашли привязку ТА и МакрДерж
+          len_aMessErr_eq_1(oOrder, @aMessErr)
+          AADD(aMessErr,;
+          "Для товаров с МаркоДержателем:"+ allt(str(mkeepr));
+           + " Тогровый Агент (ТА) - НЕ НАЙДЕН"+CRLF)
+        EndIf
+      EndIf
+
+    EndIf
 
     If len(aMessErr) > 1
       cMessErr := ""
@@ -189,6 +260,10 @@ FUNCTION EdinOrders(cDosParam, cPath_Order)
     EndIf
     sele lrs1
     netrepl('spd',{0}) //признак обработки
+    If !Empty(kta_mkeepr) // не нашли привязку ТА и МакрДерж
+      outlog(3,__FILE__,__LINE__,'  kta_mkeepr',kta_mkeepr)
+      netrepl('kta',{kta_mkeepr}) //признак обработки
+    EndIf
 
   next
 
@@ -466,3 +541,23 @@ static Function gln2kkl(_edinAttr)
   ERRORBLOCK(oErrBlk)
 
   Return ( kplr )
+
+/*****************************************************************
+ 
+ FUNCTION:
+ АВТОР..ДАТА..........С. Литовка  01-14-21 * 03:43:41pm
+ НАЗНАЧЕНИЕ.........
+ ПАРАМЕТРЫ..........
+ ВОЗВР. ЗНАЧЕНИЕ....
+ ПРИМЕЧАНИЯ.........
+ */
+STATIC FUNCTION len_aMessErr_eq_1(oOrder, aMessErr)
+  If len(aMessErr) = 1
+      AADD(aMessErr,;
+      "Заявка от " + oOrder["DATE"] + " #" + allt(oOrder['NUMBER']) + CRLF)
+      AADD(aMessErr,;
+      "Грузополучатель: "+ allt(getfield('t1','kgpr','kln','nkl')) + CRLF)
+      AADD(aMessErr,;
+      "Плательщик     : "+ allt(getfield('t1','kplr','kln','nkl')) + CRLF + CRLF)
+  EndIf
+  RETURN ( NIL )

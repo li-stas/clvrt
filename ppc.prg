@@ -4216,7 +4216,7 @@ FUNCTION ModDoc(aKop, lModDoc,dDtStart, nTmStart, aDtStart)
   LOCAL n_Kkl, cNmDir, iniFile, cCurDirUnix
   LOCAL aLineRun, hdr
   LOCAL cLogSysCmd, cCmnt
-  LOCAL nReportYear:=2020
+  LOCAL nReportYear:=2021
 
   DEFAULT lModDoc TO YES
   aLineRun:={}

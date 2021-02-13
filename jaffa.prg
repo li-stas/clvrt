@@ -390,6 +390,7 @@ STATIC FUNCTION Jafa2CsvSpod2D(dMkDt,cListNoSaleSk,cListEmail)
   LOCAL lUpLoad, adMkDt // массив дат отчета
   LOCAL aAliasClose:={}
   LOCAL aListMnTov
+  LOCAL nOsf_kom, nOsf_met
 
   If select('kln')=0
     // для закрытия
@@ -762,26 +763,32 @@ STATIC FUNCTION Jafa2CsvSpod2D(dMkDt,cListNoSaleSk,cListEmail)
 
 
 // файла с торговiми точками ttoptions.csv
+  use sbarost new
+    set index to
+  index on STR(KPL)+STR(KGP) to tmp_sbar
+
   SET CONSOLE OFF
   SET PRINT ON
   SET PRINT TO ttoptions.csv
     i:=0
     cLine:=;
-    'id дистрибьютора'+_T+;
-    'Код клиента ERP'+_T+;
-    'Название клиента'+_T+;
-    'Название клиента (сокращенное)'+_T+;
-    'Адрес клиента'+_T+; //    Индекс, Страна, Область, Населенный пункт, Улица, номер дома
-    'Фактический адрес клиента'+_T+;
-    'Название ТТ'+_T+;
-    'Адрес ТТ'+_T+; //    142400, Казахстан, Актюбинская обл, г Ногинск, ул Соборная, д 12    "Самовывоз" или адрес склада.
-    'Улица'+_T+;
-    'Дом'+_T+;
-    'Район'+_T+; //    Район торговой точки
-    'Код ЕДРПОУ'+_T+;
-    'Тип ТТ'+_T+;
-    'Канал продвижения'+_T+;
-    'Код ТА'
+    'id дистрибьютора';
+    +_T+'Код клиента ERP';
+    +_T+'Название клиента';
+    +_T+'Название клиента (сокращенное)';
+    +_T+'Адрес клиента'; //    Индекс, Страна, Область, Населенный пункт, Улица, номер дома
+    +_T+'Фактический адрес клиента';
+    +_T+'Название ТТ';
+    +_T+'Адрес ТТ'; //    142400, Казахстан, Актюбинская обл, г Ногинск, ул Соборная, д 12    "Самовывоз" или адрес склада.
+    +_T+'Улица';
+    +_T+'Дом';
+    +_T+'Район'; //    Район торговой точки
+    +_T+'Код ЕДРПОУ';
+    +_T+'Тип ТТ';
+    +_T+'Канал продвижения';
+    +_T+'Код ТА';
+    +_T+'Стойка металлическая';
+    +_T+'Стойка композитная'
         QQOUT(cLine); i++
 
   aId:={'50','51'}
@@ -797,6 +804,19 @@ STATIC FUNCTION Jafa2CsvSpod2D(dMkDt,cListNoSaleSk,cListEmail)
         cIdDistr_Ot:=aId[k] //Код дистрибьютора в системе SPOT 2D
       EndIf
 
+      sele sbarost
+      DBSeek(kplkgp->(STR(KPL)+STR(KGP)))
+      SUM Osf TO nOsf_kom ;
+        FOR lower("Стойка комп") $ lower(Nat) ;
+        WHILE kplkgp->(STR(KPL)+STR(KGP)) = sbarost->(STR(KPL)+STR(KGP))
+
+      sele sbarost
+      DBSeek(kplkgp->(STR(KPL)+STR(KGP)))
+      SUM Osf TO nOsf_met ;
+        FOR lower("Стойка метал") $ lower(Nat) ;
+        WHILE kplkgp->(STR(KPL)+STR(KGP)) = sbarost->(STR(KPL)+STR(KGP))
+
+      sele kplkgp
       cLine:=;
       cIdDistr_Ot+_T+; //Код дистрибьютора в системе SPOT 2D
       KodDistrJaffa(kplkgp->kpl,kplkgp->kgp) // код клиента
@@ -863,6 +883,11 @@ STATIC FUNCTION Jafa2CsvSpod2D(dMkDt,cListNoSaleSk,cListEmail)
       // код ТА
       cLine+=''+_T+ PADL(LTRIM(STR(kta)),4,"0")
 
+      //+_T+'Стойка металлическая';
+      cLine+=''+_T+allt(str(nOsf_met))
+      //+_T+'Стойка композитная'
+      cLine+=''+_T+allt(str(nOsf_kom))
+
 
       iif(i=0,QQOUT(cLine),QOUT(cLine)); i++
       kplkgp->(DBSkip())
@@ -872,6 +897,7 @@ STATIC FUNCTION Jafa2CsvSpod2D(dMkDt,cListNoSaleSk,cListEmail)
   QOUT('')
   SET PRINT TO
   SET PRINT OFF
+  close sbarost
 
 // торговых агентов ta.csv
   SET CONSOLE OFF

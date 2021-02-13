@@ -3,7 +3,7 @@
 #define DEB_CNT_DAY 90
 #define DEB_KOP_TARA (str(_FIELD->kop,3) $ '170;105')
 #define DEB_KOP_KASSA (str(_FIELD->kop,3) $ '169;161') // эти в Д-ту не вкл
-#define DEB_KPL 3059516
+#define DEB_KPL 3146314
 
 /*****************************************************************
  

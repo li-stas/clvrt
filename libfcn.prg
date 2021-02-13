@@ -3642,16 +3642,21 @@ function docblk()
  ‚‡‚. ‡€—…ˆ…....
  ˆŒ…—€ˆŸ.........
  */
-function agtm(p1, p2, p3)
-  local kta_r, nSelec
+function agtm(p1, p2, p3, aListKta, nTMesto)
+  LOCAL kta_r, nSelec
+  DEFAULT aListKta TO {0}
   nSelec:=select()
   kta_r=0
+
   ktas_r=p1
   kpl_r=p2
   kgp_r=p3
+
   tmesto_r=getfield('t2', 'kpl_r,kgp_r', 'etm', 'tmesto')
+  nTMesto := tmesto_r
+
   if (tmesto_r#0)
-    sele stagtm
+    sele STagTm
     set orde to tag t2
     if (netseek('t2', 'tmesto_r'))
       while (tmesto=tmesto_r)
@@ -3664,9 +3669,10 @@ function agtm(p1, p2, p3)
           endif
         Else
           kta_r=kta_rr // ¯®á«¥¤­ïï ¯à¨¢ï§ª 
+          AADD(aListKta,kta_r)
         EndIf
 
-        sele stagtm
+        sele STagTm
         skip
       enddo
 
